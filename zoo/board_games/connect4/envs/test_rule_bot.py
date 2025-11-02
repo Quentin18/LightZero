@@ -31,7 +31,8 @@ class TestConnect4RuleBot():
             bot_action_type='rule',
             screen_scaling=9,
             save_replay=False,
-            prob_random_action_in_bot=0
+            prob_random_action_in_bot=0,
+            replay_path=None,
         )
         self.env = Connect4Env(cfg)
         self.player = 1

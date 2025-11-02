@@ -19,6 +19,7 @@ class TestConnect4Env:
             agent_vs_human=False,
             prob_random_agent=0,
             prob_expert_agent=0,
+            replay_path=None,
         )
         env = Connect4Env(cfg)
         env.reset()
@@ -69,6 +70,7 @@ class TestConnect4Env:
             agent_vs_human=False,
             prob_random_agent=0,
             prob_expert_agent=0,
+            replay_path=None,
         )
         env = Connect4Env(cfg)
         env.reset()
@@ -108,6 +110,7 @@ class TestConnect4Env:
             agent_vs_human=False,
             prob_random_agent=0,
             prob_expert_agent=0,
+            replay_path=None,
         )
         env = Connect4Env(cfg)
         env.reset(replay_name_suffix=f'test_eval_mode')

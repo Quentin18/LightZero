@@ -39,12 +39,13 @@ class TestConnect4Bot():
             screen_scaling=9,
             render_mode= None,
             prob_random_action_in_bot=0,
+            replay_path=None,
         )
 
     def test_mcts_bot_vs_rule_bot(self, num_simulations: int = 200) -> None:
         """
         Overview:
-            A tictactoe game between mcts_bot and rule_bot, where rule_bot take the first move.
+            A connect4 game between mcts_bot and rule_bot, where rule_bot take the first move.
         Arguments:
             - num_simulations (:obj:`int`): The number of the simulations required to find the best move.
         """
@@ -79,7 +80,7 @@ class TestConnect4Bot():
                 if player_index == 0:
                     t1 = time.time()
                     # action = env.bot_action()
-                    action, node = player.get_actions(state, step, player_index=player_index)
+                    action = player.get_actions(state, step, player_index=player_index)
                     t2 = time.time()
                     # print("The time difference is :", t2-t1)
                     mcts_bot_time_list.append(t2 - t1)
@@ -130,7 +131,7 @@ class TestConnect4Bot():
     def test_mcts_bot_vs_mcts_bot(self, num_simulations_1: int = 50, num_simulations_2: int = 50) -> None:
         """
         Overview:
-            A tictactoe game between two mcts_bots. 
+            A connect4 game between two mcts_bots.
         Arguments:
             - num_simulations_1 (:obj:`int`): The number of the simulations of player 1 required to find the best move.
             - num_simulations_2 (:obj:`int`): The number of the simulations of player 2 required to find the best move.
@@ -217,7 +218,7 @@ class TestConnect4Bot():
     def test_rule_bot_vs_rule_bot(self) -> None:
         """
         Overview:
-            A tictactoe game between mcts_bot and rule_bot, where rule_bot take the first move.
+            A connect4 game between mcts_bot and rule_bot, where rule_bot take the first move.
         Arguments:
             - num_simulations (:obj:`int`): The number of the simulations required to find the best move.
         """
