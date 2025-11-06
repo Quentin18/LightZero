@@ -91,6 +91,9 @@ class Connect4Env(BaseEnv):
         # Load the config.
         self.cfg = cfg
 
+        self.row_count = cfg.get("row_count", 6)
+        self.column_count = cfg.get("column_count", 7)
+
         # Set the format of the observation.
         self.channel_last = cfg.channel_last
         self.scale = cfg.scale
@@ -123,7 +126,7 @@ class Connect4Env(BaseEnv):
             f'self.prob_random_agent:{self.prob_random_agent}, self.prob_expert_agent:{self.prob_expert_agent}'
 
         # The board state is saved as a one-dimensional array instead of a two-dimensional array for ease of computation in ``step()`` function.
-        self.board = [0] * (6 * 7)
+        self.board = [0] * (self.row_count * self.column_count)
 
         self.players = [1, 2]
         self._current_player = 1
@@ -153,7 +156,7 @@ class Connect4Env(BaseEnv):
             After taking an action in the environment, the function transitions the environment to the next state \
             and returns the relevant information for the next time step.
         Arguments:
-            - action (:obj:`int`): A value from 0 to 6 indicating the position to move on the connect4 board.
+            - action (:obj:`int`): A value from 0 to (column count - 1) indicating the position to move on the connect4 board.
             - flag (:obj:`str`): A marker indicating the source of an action, for debugging convenience.
         Returns:
             - timestep (:obj:`BaseEnvTimestep`): A namedtuple that records the observation and obtained reward after taking the action, \
@@ -161,12 +164,12 @@ class Connect4Env(BaseEnv):
         """
         if action in self.legal_actions:
             piece = self.players.index(self._current_player) + 1
-            for i in list(filter(lambda x: x % 7 == action, list(range(41, -1, -1)))):
+            for i in list(filter(lambda x: x % self.column_count == action, list(range(self.row_count * self.column_count - 1, -1, -1)))):
                 if self.board[i] == 0:
                     self.board[i] = piece
                     break
         else:
-            print(np.array(self.board).reshape(6, 7))
+            print(np.array(self.board).reshape(self.row_count, self.column_count))
             logging.warning(
                 f"You input illegal action: {action}, the legal_actions are {self.legal_actions}. "
                 f"flag is {flag}."
@@ -175,7 +178,7 @@ class Connect4Env(BaseEnv):
             action = self.random_action()
             print("the random action is", action)
             piece = self.players.index(self._current_player) + 1
-            for i in list(filter(lambda x: x % 7 == action, list(range(41, -1, -1)))):
+            for i in list(filter(lambda x: x % self.column_count == action, list(range(self.row_count * self.column_count - 1, -1, -1)))):
                 if self.board[i] == 0:
                     self.board[i] = piece
                     break
@@ -213,7 +216,7 @@ class Connect4Env(BaseEnv):
             Then return the result of taking these two actions sequentially in the environment.\
             In ``eval_mode``, this function also call ``_player_step()`` twice, and the second action is from human action or from the bot.
         Arguments:
-            - action (:obj:`int`): A value from 0 to 6 indicating the position to move on the connect4 board.
+            - action (:obj:`int`): A value from 0 to (column count - 1) indicating the position to move on the connect4 board.
         Returns:
             - timestep (:obj:`BaseEnvTimestep`): A namedtuple that records the observation and obtained reward after taking the action, \
             whether the game is terminated, and some other information.        
@@ -308,20 +311,20 @@ class Connect4Env(BaseEnv):
         if replay_name_suffix is not None:
             self.replay_name_suffix = replay_name_suffix
         if init_state is None:
-            self.board = [0] * (6 * 7)
+            self.board = [0] * (self.row_count * self.column_count)
         else:
             self.board = np.array(copy.deepcopy(init_state), dtype="int32")
         self.players = [1, 2]
         self.start_player_index = start_player_index
         self._current_player = self.players[self.start_player_index]
 
-        self._action_space = spaces.Discrete(7)
+        self._action_space = spaces.Discrete(self.column_count)
         self._reward_space = spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32)
         self._observation_space = spaces.Dict(
             {
-                "observation": spaces.Box(low=0, high=1, shape=(3, 6, 7), dtype=np.int8),
-                "action_mask": spaces.Box(low=0, high=1, shape=(7,), dtype=np.int8),
-                "board": spaces.Box(low=0, high=2, shape=(6, 7), dtype=np.int8),
+                "observation": spaces.Box(low=0, high=1, shape=(3, self.row_count, self.column_count), dtype=np.int8),
+                "action_mask": spaces.Box(low=0, high=1, shape=(self.column_count,), dtype=np.int8),
+                "board": spaces.Box(low=0, high=2, shape=(self.row_count, self.column_count), dtype=np.int8),
                 "current_player_index": spaces.Discrete(2),
                 "to_play": spaces.Discrete(2),
             }
@@ -342,10 +345,10 @@ class Connect4Env(BaseEnv):
                 the 1 dim indicates which positions are occupied by ``self.next_player``,\
                 the 2 dim indicates which player is the to_play player, 1 means player 1, 2 means player 2.
         """
-        board_vals = np.array(self.board).reshape(6, 7)
+        board_vals = np.array(self.board).reshape(self.row_count, self.column_count)
         board_curr_player = np.where(board_vals == self.current_player, 1, 0)
         board_opponent_player = np.where(board_vals == self.next_player, 1, 0)
-        board_to_play = np.full((6, 7), self.current_player)
+        board_to_play = np.full((self.row_count, self.column_count), self.current_player)
         raw_obs = np.array([board_curr_player, board_opponent_player, board_to_play], dtype=np.float32)
         if self.scale:
             scale_obs = copy.deepcopy(raw_obs / 2)
@@ -362,7 +365,7 @@ class Connect4Env(BaseEnv):
     def observe(self) -> dict:
         legal_moves = self.legal_actions
 
-        action_mask = np.zeros(7, "int8")
+        action_mask = np.zeros(self.column_count, "int8")
         for i in legal_moves:
             action_mask[i] = 1
 
@@ -383,7 +386,7 @@ class Connect4Env(BaseEnv):
 
     @property
     def legal_actions(self) -> List[int]:
-        return [i for i in range(7) if self.board[i] == 0]
+        return [i for i in range(self.column_count) if self.board[i] == 0]
 
     def render(self, mode: str = None) -> None:
         """
@@ -399,7 +402,7 @@ class Connect4Env(BaseEnv):
         """
         # In 'state_realtime_mode' mode, print the current game board for rendering.
         if mode == "state_realtime_mode":
-            print(np.array(self.board).reshape(6, 7))
+            print(np.array(self.board).reshape(self.row_count, self.column_count))
             return
         else:
             # In other two modes, use a screen for rendering.
@@ -409,7 +412,7 @@ class Connect4Env(BaseEnv):
             self.screen = pygame.Surface((screen_width, screen_height))
 
             # Load and scale all of the necessary images.
-            tile_size = (screen_width * (91 / 99)) / 7
+            tile_size = (screen_width * (91 / 99)) / self.column_count
 
             red_chip = self.get_image(os.path.join("img", "C4RedPiece.png"))
             red_chip = pygame.transform.scale(
@@ -429,21 +432,21 @@ class Connect4Env(BaseEnv):
             self.screen.blit(board_img, (0, 0))
 
             # Blit the necessary chips and their positions.
-            for i in range(0, 42):
+            for i in range(0, self.row_count * self.column_count):
                 if self.board[i] == 1:
                     self.screen.blit(
                         red_chip,
                         (
-                            (i % 7) * (tile_size) + (tile_size * (6 / 13)),
-                            int(i / 7) * (tile_size) + (tile_size * (6 / 13)),
+                            (i % self.column_count) * (tile_size) + (tile_size * (self.row_count / 13)),
+                            int(i / self.column_count) * (tile_size) + (tile_size * (self.row_count / 13)),
                         ),
                     )
                 elif self.board[i] == 2:
                     self.screen.blit(
                         black_chip,
                         (
-                            (i % 7) * (tile_size) + (tile_size * (6 / 13)),
-                            int(i / 7) * (tile_size) + (tile_size * (6 / 13)),
+                            (i % self.column_count) * (tile_size) + (tile_size * (self.row_count / 13)),
+                            int(i / self.column_count) * (tile_size) + (tile_size * (self.row_count / 13)),
                         ),
                     )
             if mode == "image_realtime_mode":
@@ -501,14 +504,11 @@ class Connect4Env(BaseEnv):
                 - if draw,             'done' = True, 'winner' = -1
                 - if game is not over, 'done' = False,'winner' = -1
         """
-        board = copy.deepcopy(np.array(self.board)).reshape(6, 7)
+        board = copy.deepcopy(np.array(self.board)).reshape(self.row_count, self.column_count)
         for piece in [1, 2]:
             # Check horizontal locations for win
-            column_count = 7
-            row_count = 6
-
-            for c in range(column_count - 3):
-                for r in range(row_count):
+            for c in range(self.column_count - 3):
+                for r in range(self.row_count):
                     if (
                             board[r][c] == piece
                             and board[r][c + 1] == piece
@@ -518,8 +518,8 @@ class Connect4Env(BaseEnv):
                         return True, piece
 
             # Check vertical locations for win
-            for c in range(column_count):
-                for r in range(row_count - 3):
+            for c in range(self.column_count):
+                for r in range(self.row_count - 3):
                     if (
                             board[r][c] == piece
                             and board[r + 1][c] == piece
@@ -529,8 +529,8 @@ class Connect4Env(BaseEnv):
                         return True, piece
 
             # Check positively sloped diagonals
-            for c in range(column_count - 3):
-                for r in range(row_count - 3):
+            for c in range(self.column_count - 3):
+                for r in range(self.row_count - 3):
                     if (
                             board[r][c] == piece
                             and board[r + 1][c + 1] == piece
@@ -540,8 +540,8 @@ class Connect4Env(BaseEnv):
                         return True, piece
 
             # Check negatively sloped diagonals
-            for c in range(column_count - 3):
-                for r in range(3, row_count):
+            for c in range(self.column_count - 3):
+                for r in range(3, self.row_count):
                     if (
                             board[r][c] == piece
                             and board[r - 1][c + 1] == piece
@@ -611,7 +611,7 @@ class Connect4Env(BaseEnv):
         Returns:
             An integer from the action space.
         """
-        print(np.array(self.board).reshape(6, 7))
+        print(np.array(self.board).reshape(self.row_count, self.column_count))
         while True:
             try:
                 column = int(
@@ -681,7 +681,7 @@ class Connect4Env(BaseEnv):
             raise ValueError("action {0} on board {1} is not legal".format(action, self.board))
         new_board = copy.deepcopy(self.board)
         piece = self.players.index(self._current_player) + 1
-        for i in list(filter(lambda x: x % 7 == action, list(range(41, -1, -1)))):
+        for i in list(filter(lambda x: x % self.column_count == action, list(range(self.row_count * self.column_count - 1, -1, -1)))):
             if new_board[i] == 0:
                 new_board[i] = piece
                 break

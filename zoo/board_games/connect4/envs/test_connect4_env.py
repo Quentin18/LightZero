@@ -7,7 +7,21 @@ from connect4_env import Connect4Env
 @pytest.mark.envtest
 class TestConnect4Env:
 
-    def test_self_play_mode(self) -> None:
+    @pytest.mark.parametrize(
+        "size_arguments",
+        [
+            {
+                "row_count": 6,
+                "column_count": 7,
+            },
+            {
+                "row_count": 7,
+                "column_count": 9,
+            },
+            {},
+        ],
+    )
+    def test_self_play_mode(self, size_arguments: dict[str, int]) -> None:
         cfg = EasyDict(
             battle_mode='self_play_mode',
             bot_action_type='rule',  # {'rule', 'mcts'}
@@ -20,6 +34,7 @@ class TestConnect4Env:
             prob_random_agent=0,
             prob_expert_agent=0,
             replay_path=None,
+            **size_arguments,
         )
         env = Connect4Env(cfg)
         env.reset()
@@ -58,7 +73,21 @@ class TestConnect4Env:
                     print('draw')
                 break
 
-    def test_play_with_bot_mode(self) -> None:
+    @pytest.mark.parametrize(
+        "size_arguments",
+        [
+            {
+                "row_count": 6,
+                "column_count": 7,
+            },
+            {
+                "row_count": 7,
+                "column_count": 9,
+            },
+            {},
+        ],
+    )
+    def test_play_with_bot_mode(self, size_arguments: dict[str, int]) -> None:
         cfg = EasyDict(
             battle_mode='play_with_bot_mode',
             bot_action_type='rule',  # {'rule', 'mcts'}
@@ -71,6 +100,7 @@ class TestConnect4Env:
             prob_random_agent=0,
             prob_expert_agent=0,
             replay_path=None,
+            **size_arguments,
         )
         env = Connect4Env(cfg)
         env.reset()
@@ -98,7 +128,21 @@ class TestConnect4Env:
                     print('draw')
                 break
 
-    def test_eval_mode(self) -> None:
+    @pytest.mark.parametrize(
+        "size_arguments",
+        [
+            {
+                "row_count": 6,
+                "column_count": 7,
+            },
+            {
+                "row_count": 7,
+                "column_count": 9,
+            },
+            {},
+        ],
+    )
+    def test_eval_mode(self, size_arguments: dict[str, int]) -> None:
         cfg = EasyDict(
             battle_mode='eval_mode',
             bot_action_type='rule',  # {'rule', 'mcts'}
@@ -111,6 +155,7 @@ class TestConnect4Env:
             prob_random_agent=0,
             prob_expert_agent=0,
             replay_path=None,
+            **size_arguments,
         )
         env = Connect4Env(cfg)
         env.reset(replay_name_suffix=f'test_eval_mode')

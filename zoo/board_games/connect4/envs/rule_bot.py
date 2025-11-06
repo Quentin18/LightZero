@@ -36,7 +36,7 @@ class Connect4RuleBot():
         self.legal_actions = self.env.legal_actions
         self.current_player = player
         self.next_player = self.players[0] if self.current_player == self.players[1] else self.players[1]
-        self.board = np.array(copy.deepcopy(board)).reshape(6, 7)
+        self.board = np.array(copy.deepcopy(board)).reshape(self.env.row_count, self.env.column_count)
 
         # Check if there is a winning move.
         for action in self.legal_actions:
@@ -105,7 +105,7 @@ class Connect4RuleBot():
         temp = [self.board.copy(), self.current_player]
         self.board = temp_board
         self.current_player = 3 - self.current_player
-        legal_actions = [i for i in range(7) if self.board[0][i] == 0]
+        legal_actions = [i for i in range(self.env.column_count) if self.board[0][i] == 0]
         for action in legal_actions:
             if self.is_winning_move(action):
                 self.board, self.current_player = temp
@@ -149,7 +149,7 @@ class Connect4RuleBot():
                 break
             self.board[row][action] = piece
             self.current_player = self.next_player
-            legal_actions = [i for i in range(7) if self.board[0][i] == 0]
+            legal_actions = [i for i in range(self.env.column_count) if self.board[0][i] == 0]
             # print(f'if we take action {action}, then the legal actions for opponent are {legal_actions}')
             for a in legal_actions:
                 if self.is_winning_move(a) or self.is_winning_move_in_two_steps(a):
@@ -203,7 +203,7 @@ class Connect4RuleBot():
         Returns:
             - row(:obj:`int`): The available row in the given column; None if the column is full.
         """
-        for row in range(5, -1, -1):
+        for row in range(self.env.row_count - 1, -1, -1):
             if self.board[row][col] == 0:
                 return row
         return None
@@ -224,30 +224,30 @@ class Connect4RuleBot():
         row = self.get_available_row(action)
 
         # Check horizontal locations
-        for c in range(max(0, action - seq_len + 1), min(7 - seq_len + 1, action + 1)):
+        for c in range(max(0, action - seq_len + 1), min(self.env.column_count - seq_len + 1, action + 1)):
             window = list(board[row, c:c + seq_len])
             if window.count(piece) == seq_len:
                 return True
 
         # Check vertical locations
-        for r in range(max(0, row - seq_len + 1), min(6 - seq_len + 1, row + 1)):
+        for r in range(max(0, row - seq_len + 1), min(self.env.row_count - seq_len + 1, row + 1)):
             window = list(board[r:r + seq_len, action])
             if window.count(piece) == seq_len:
                 return True
 
         # Check positively sloped diagonals
-        for r in range(6):
-            for c in range(7):
+        for r in range(self.env.row_count):
+            for c in range(self.env.column_count):
                 if r - c == row - action:
-                    window = [board[r - i][c - i] for i in range(seq_len) if 0 <= r - i < 6 and 0 <= c - i < 7]
+                    window = [board[r - i][c - i] for i in range(seq_len) if 0 <= r - i < self.env.row_count and 0 <= c - i < self.env.column_count]
                     if len(window) == seq_len and window.count(piece) == seq_len:
                         return True
 
         # Check negatively sloped diagonals
-        for r in range(6):
-            for c in range(7):
+        for r in range(self.env.row_count):
+            for c in range(self.env.column_count):
                 if r + c == row + action:
-                    window = [board[r - i][c + i] for i in range(seq_len) if 0 <= r - i < 6 and 0 <= c + i < 7]
+                    window = [board[r - i][c + i] for i in range(seq_len) if 0 <= r - i < self.env.row_count and 0 <= c + i < self.env.column_count]
                     if len(window) == seq_len and window.count(piece) == seq_len:
                         return True
 
@@ -264,29 +264,29 @@ class Connect4RuleBot():
             - Result(:obj:`bool`): True if there are four of the bot's pieces in a row; False otherwise.
         """
         # Check horizontal locations
-        for col in range(4):
-            for row in range(6):
+        for col in range(self.env.column_count - 3):
+            for row in range(self.env.row_count):
                 if board[row][col] == piece and board[row][col + 1] == piece and board[row][col + 2] == piece and \
                         board[row][col + 3] == piece:
                     return True
 
         # Check vertical locations
-        for col in range(7):
-            for row in range(3):
+        for col in range(self.env.column_count):
+            for row in range(self.env.row_count - 3):
                 if board[row][col] == piece and board[row + 1][col] == piece and board[row + 2][col] == piece and \
                         board[row + 3][col] == piece:
                     return True
 
         # Check positively sloped diagonals
-        for row in range(3):
-            for col in range(4):
+        for row in range(self.env.row_count - 3):
+            for col in range(self.env.column_count - 3):
                 if board[row][col] == piece and board[row + 1][col + 1] == piece and board[row + 2][
                     col + 2] == piece and board[row + 3][col + 3] == piece:
                     return True
 
         # Check negatively sloped diagonals
-        for row in range(3, 6):
-            for col in range(4):
+        for row in range(3, self.env.row_count):
+            for col in range(self.env.column_count - 3):
                 if board[row][col] == piece and board[row - 1][col + 1] == piece and board[row - 2][
                     col + 2] == piece and board[row - 3][col + 3] == piece:
                     return True
@@ -306,31 +306,31 @@ class Connect4RuleBot():
             - result(:obj:`bool`): True if such a sequence can be formed; False otherwise.
         """
         # Check horizontal locations
-        for row in range(6):
+        for row in range(self.env.row_count):
             row_array = list(board[row, :])
-            for c in range(8 - seq_len):
+            for c in range(self.env.column_count + 1 - seq_len):
                 window = row_array[c:c + seq_len]
                 if window.count(piece) == seq_len:
                     return True
 
         # Check vertical locations
-        for col in range(7):
+        for col in range(self.env.column_count):
             col_array = list(board[:, col])
-            for r in range(7 - seq_len):
+            for r in range(self.env.row_count + 1 - seq_len):
                 window = col_array[r:r + seq_len]
                 if window.count(piece) == seq_len:
                     return True
 
         # Check positively sloped diagonals
-        for row in range(6 - seq_len):
-            for col in range(7 - seq_len):
+        for row in range(self.env.row_count - seq_len):
+            for col in range(self.env.column_count - seq_len):
                 window = [board[row + i][col + i] for i in range(seq_len)]
                 if window.count(piece) == seq_len:
                     return True
 
         # Check negatively sloped diagonals
-        for row in range(seq_len - 1, 6):
-            for col in range(7 - seq_len):
+        for row in range(seq_len - 1, self.env.row_count):
+            for col in range(self.env.column_count - seq_len):
                 window = [board[row - i][col + i] for i in range(seq_len)]
                 if window.count(piece) == seq_len:
                     return True
