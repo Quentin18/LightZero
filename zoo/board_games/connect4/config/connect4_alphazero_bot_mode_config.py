@@ -12,6 +12,8 @@ batch_size = 256
 max_env_step = int(1e6)
 model_path = None
 mcts_ctree = False
+row_count = 7
+column_count = 9
 
 # ==============================================================
 # end of the most frequently changed config specified by the user
@@ -37,6 +39,8 @@ connect4_alphazero_config = dict(
         render_mode=None,
         replay_path=None,
         alphazero_mcts_ctree=mcts_ctree,
+        row_count=row_count,
+        column_count=column_count,
         # ==============================================================
     ),
     policy=dict(
@@ -47,8 +51,8 @@ connect4_alphazero_config = dict(
         simulation_env_config_type='play_with_bot',
         # ==============================================================
         model=dict(
-            observation_shape=(3, 6, 7),
-            action_space_size=7,
+            observation_shape=(3, row_count, column_count),
+            action_space_size=column_count,
             num_res_blocks=1,
             num_channels=64,
         ),
